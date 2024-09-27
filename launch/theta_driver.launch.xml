@@ -1,0 +1,13 @@
+<launch>
+  <arg name="topic_pub_theta" default="theta/image_raw"/>
+  <arg name="use4k_theta" default="false"/>
+  <arg name="camera_frame_theta" default="camera_theta"/>
+  <arg name="serial_theta" default=""/>
+
+  <node pkg="theta_driver" exec="theta_driver_node" name="theta_driver_node" output="screen">
+    <param name="topic_pub" value="$(var topic_pub_theta)"/>
+    <param name="use4k" value="$(var use4k_theta)"/>
+    <param name="camera_frame" value="$(var camera_frame_theta)"/>
+    <param name="serial" value="$(var serial_theta)"/>
+  </node>
+</launch>

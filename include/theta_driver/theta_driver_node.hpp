@@ -1,22 +1,23 @@
-#ifndef THETA_DERIVER_LIB_HPP
-#define THETA_DERIVER_LIB_HPP
+#ifndef THETA_DERIVER_NODE_HPP
+#define THETA_DERIVER_NODE_HPP
 
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
+#include <chrono>
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/image.hpp"
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
 #include <gst/app/gstappsink.h>
 #include <libuvc/libuvc.h>
-#include <opencv2/core.hpp>
 #include "thetauvc.h"
+#include <opencv2/core.hpp>
 
 namespace theta_driver {
 
-class ThetaDriver : public rclcpp::Node {
+class ThetaDriverNode : public rclcpp::Node
+{
 public:
-    ThetaDriver(const rclcpp::NodeOptions & options);
-    virtual ~ThetaDriver();
-    void onInit();
+    ThetaDriverNode();
+    virtual ~ThetaDriverNode();
     bool init();
     bool open();
     void publishImage(GstMapInfo map);
@@ -27,7 +28,7 @@ public:
     uvc_context_t* ctx_;
     bool use4k_ = false;
     std::string serial_ = "";
-    std::string camera_frame_ = "camera_link";
+    std::string camera_frame_ = "camera_theta";
     std::string pipeline_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
 };
@@ -47,4 +48,4 @@ struct gst_src {
 
 } // namespace theta_driver
 
-#endif // THETA_DERIVER_LIB_HPP
+#endif // THETA_DERIVER_NODE_HPP

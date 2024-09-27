@@ -4,22 +4,20 @@
   <name>theta_driver</name>
   <version>0.0.0</version>
   <description>The theta_driver package</description>
-  <maintainer email="world.applepie@gmail.com">ymd-stella</maintainer>
+  <maintainer email="roricljy@gmail.com">roricljy</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>std_srvs</depend>
   <depend>cv_bridge</depend>
+  <depend>image_transport</depend>
   <depend>libgstreamer1.0-dev</depend>
   <depend>libgstreamer-plugins-base1.0-dev</depend>
-  <depend>libuvc-dev</depend>
+  <depend>libuvc</depend>
   <depend>boost</depend>
-
-  <exec_depend>ros2launch</exec_depend>
+  <depend>pluginlib</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
@@ -28,3 +26,4 @@
     <build_type>ament_cmake</build_type>
   </export>
 </package>
+

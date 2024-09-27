@@ -1,3 +1,0 @@
-[submodule "3rd/libuvc-theta-sample"]
-	path = 3rd/libuvc-theta-sample
-	url = https://github.com/OpenVSLAM-Community/libuvc-theta-sample.git
