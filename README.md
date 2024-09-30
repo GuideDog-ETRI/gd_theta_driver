@@ -73,7 +73,7 @@ Latency of theta_driver can be reduced by using the **NVIDIA DeepStream** GStrea
 
 4. Modify the theta_driver pipeline to use the NVIDIA decoder
 
-theta_driver_node.cpp (line number 113 ~ 114)
+`theta_driver_node.cpp` (line number 113 ~ 114):
 ```bash
 //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! decodebin ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
 pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvh264dec ! queue ! gldownload ! queue ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
