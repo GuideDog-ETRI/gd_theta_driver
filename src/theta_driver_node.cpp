@@ -110,12 +110,8 @@ void ThetaDriverNode::publishImage(GstMapInfo map) {
 
 ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
 {
-    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvh264dec ! glimagesink qos=false sync=false";
-    pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvh264dec ! queue ! gldownload ! queue ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
-
-    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! decodebin ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
-    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvdec ! gldownload ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
-    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvdec ! queue ! gldownload ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
+    pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! decodebin ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvh264dec ! queue ! gldownload ! queue ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
 
     this->declare_parameter("topic_pub", "theta/image_raw");
     this->declare_parameter("camera_frame", "camera_theta");

@@ -1,13 +1,9 @@
-# gcc
-sudo apt install --reinstall gcc-12
-sudo ln -s -f /usr/bin/gcc-12 /usr/bin/gcc
-gcc --version
-
-# git settings
-git config --global user.name roricljy
-git config --global user.email roricljy@gmail.com
+# Update the Ubuntu system to be up to date
+sudo apt update
+sudo apt upgrade
 
 # install ros2 humble
+# https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html
 sudo apt install software-properties-common
 sudo add-apt-repository universe
 sudo apt update && sudo apt install curl -y
@@ -27,23 +23,12 @@ sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstream
      gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 \
      gstreamer1.0-qt5 gstreamer1.0-pulseaudio
 
-# check gstreamer version
+# make sure the version of gstreamer is 1.20.3 (if not, installation of deepstream will be fail)
 gst-launch-1.0 --gst-version
 
-# install gd_libuvc-theta
-git clone https://github.com/GuideDog-ETRI/gd_libuvc-theta.git
-cd gd_libuvc-theta
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make
-sudo make install
-
-# https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_Installation.html
 # upgrade glib version to 2.76.6
 sudo apt install meson
 sudo apt install ninja-build
-
 git clone https://github.com/GNOME/glib.git
 cd glib
 git checkout 2.76.6
@@ -72,26 +57,17 @@ libjansson4 \
 libyaml-cpp-dev \
 libjsoncpp-dev \
 protobuf-compiler \
-gcc \
 make \
 git \
 python3
 
-# Install CUDA Toolkit 12.2
-# https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/
-sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub
-sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /"
-sudo apt-get update
-sudo apt-get install cuda-toolkit-12-2
+# Upgrade the GCC version to match the version used to build the Ubuntu kernel
+# (It solves build error problem when installing NVIDIA driver 535 on the Ubuntu 22.04 LTS)
+sudo apt install --reinstall gcc-12
+sudo ln -s -f /usr/bin/gcc-12 /usr/bin/gcc
+gcc --version
 
-# Install NVIDIA driver 535.161.08
-# https://www.nvidia.cn/Download/driverResults.aspx/222416/en-us/
-#Ensure gdm, lightdm or Xorg service is stopped while installing nvidia driver
-#chmod 755 NVIDIA-Linux-x86_64-535.161.08.run
-#sudo service gdm stop
-#sudo service lightdm stop
-#sudo pkill -9 Xorg
-#sudo ./NVIDIA-Linux-x86_64-535.161.08.run --no-cc-version-check
+# Install NVIDIA driver 535 version
 sudo ubuntu-drivers devices
 sudo ubuntu-drivers install nvidia:535
 
@@ -118,23 +94,12 @@ cd ..
 rm -rf librdkafka
 
 # Install the DeepStream SDK
-# https://catalog.ngc.nvidia.com/orgs/nvidia/resources/deepstream
+# download deepstream-7.0_7.0.0-1_amd64.deb from https://catalog.ngc.nvidia.com/orgs/nvidia/resources/deepstream
 sudo apt-get install ./deepstream-7.0_7.0.0-1_amd64.deb
+
+# Check if deepstream plug-ins are successfuly installed in gstreamerr
 gst-inspect-1.0 | grep "^nv"
 
-# Build gstramer 1.20.3 in case deepstream fails
-# https://gstreamer.freedesktop.org/documentation/installing/building-from-source-using-meson.html?gi-language=c
-sudo apt-get install flex bison
-git clone https://gitlab.freedesktop.org/gstreamer/gstreamer.git
-cd gstreamer
-git checkout 1.20.3
-meson build --prefix=/usr --buildtype release
-meson compile -C build
-meson install -C build
-cd ..
-rm -rf gstreamer
-gst-launch-1.0 --gst-version
-
-# Run the deepstream-app (the reference application)
+# Test the deepstream-app (the reference application)
 cd /opt/nvidia/deepstream/deepstream-7.0/samples/configs/deepstream-app
 deepstream-app -c source30_1080p_dec_infer-resnet_tiled_display_int8.txt
