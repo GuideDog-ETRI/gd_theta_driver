@@ -67,7 +67,7 @@ Latency of theta_driver can be reduced by using the **NVIDIA DeepStream** GStrea
 
 1. Install the Ubuntu 22.04.5 LTS or later
 
-2. Update the Ubuntu system to the latest  (GUI updater or `sudo apt update && sudo apt upgrade`)
+2. Update the Ubuntu system to be up to date (GUI updater or `sudo apt update && sudo apt upgrade`)
 
 3. Install DeepStream following the instructions in `install_deepstream.sh` script
 
