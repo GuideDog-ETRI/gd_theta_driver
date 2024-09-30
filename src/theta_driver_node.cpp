@@ -110,9 +110,9 @@ void ThetaDriverNode::publishImage(GstMapInfo map) {
 
 ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
 {
-    pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! decodebin ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
-    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvh264dec ! queue ! gldownload ! queue ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
-
+    pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink sync=false qos=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
     this->declare_parameter("topic_pub", "theta/image_raw");
     this->declare_parameter("camera_frame", "camera_theta");
     this->declare_parameter("serial", "");
