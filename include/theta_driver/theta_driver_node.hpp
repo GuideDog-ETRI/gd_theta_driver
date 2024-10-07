@@ -4,6 +4,7 @@
 #include <chrono>
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
+#include "sensor_msgs/msg/compressed_image.hpp"
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
 #include <gst/app/gstappsink.h>
@@ -21,6 +22,7 @@ public:
     bool init();
     bool open();
     void publishImage(GstMapInfo map);
+    void publishCompressedImage(GstMapInfo map);
 
     bool streaming_ = false;
     uvc_device_handle_t* devh_;
@@ -31,6 +33,7 @@ public:
     std::string camera_frame_ = "camera_theta";
     std::string pipeline_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr image_pub_compressed_;
 };
 
 struct gst_src {

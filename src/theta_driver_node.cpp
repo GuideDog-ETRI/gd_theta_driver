@@ -64,11 +64,8 @@ GstFlowReturn new_sample_callback(GstAppSink* sink, gpointer data) {
     gst_buffer_map(app_buffer, &map, GST_MAP_WRITE);
 
     ThetaDriverNode* driver = static_cast<ThetaDriverNode*>(data);
-
-    static int cnt = 0;
-    if (cnt % 3 == 0)
-        driver->publishImage(map);
-    cnt++;
+    //driver->publishImage(map);
+    driver->publishCompressedImage(map);
 
     gst_sample_unref(sample);
     gst_buffer_unmap(app_buffer, &map);
@@ -108,11 +105,38 @@ void ThetaDriverNode::publishImage(GstMapInfo map) {
     image_pub_->publish(image);
 }
 
+void ThetaDriverNode::publishCompressedImage(GstMapInfo map) {
+    int dataLength;
+    guint8* rdata;
+
+    dataLength = map.size;
+    rdata = map.data;
+
+    sensor_msgs::msg::CompressedImage compressed_image;
+    compressed_image.header.stamp = this->now();
+    compressed_image.header.frame_id = camera_frame_;
+    
+    // Set compressed image format, e.g., "jpeg"
+    compressed_image.format = "jpeg";
+
+    // Assign the raw data directly to the compressed image data
+    std::vector<unsigned char> values(rdata, (unsigned char*)rdata + dataLength);
+    compressed_image.data = values;
+
+    // Publish the compressed image
+    image_pub_compressed_->publish(compressed_image);
+}
+
 ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
 {
-    pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink sync=false qos=false emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
+
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! jpegenc ! appsink name=appsink qos=false sync=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! jpegenc ! appsink name=appsink sync=false qos=false emit-signals=true";
+    pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! jpegenc ! appsink name=appsink sync=false qos=false emit-signals=true";
+
     this->declare_parameter("topic_pub", "theta/image_raw");
     this->declare_parameter("camera_frame", "camera_theta");
     this->declare_parameter("serial", "");
@@ -122,8 +146,10 @@ ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
     camera_frame_ = this->get_parameter("camera_frame").as_string();
     serial_ = this->get_parameter("serial").as_string();
     use4k_ = this->get_parameter("use4k").as_bool();
-    
-    image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(topic_pub.c_str(), 1);
+
+    rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();
+    //image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(topic_pub.c_str(), sensor_data_qos);
+    image_pub_compressed_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("theta/image_raw/compressed", sensor_data_qos);
 
     rclcpp::Rate rate(1);    
     while (rclcpp::ok()) {
