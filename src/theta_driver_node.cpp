@@ -33,11 +33,14 @@ gboolean gst_bus_callback(GstBus* bus, GstMessage* message, gpointer data) {
 
 void uvc_streaming_callback(uvc_frame_t* frame, void* ptr) {
     struct gst_src* src = (struct gst_src*)ptr;
-    GstBuffer* buffer;
+    GstBuffer* buffer = nullptr;
     GstFlowReturn ret;
     GstMapInfo map;
 
+    //if(src->pool) gst_buffer_pool_acquire_buffer(src->pool, &buffer, NULL);
+    //else buffer = gst_buffer_new_allocate(NULL, frame->data_bytes, NULL);
     buffer = gst_buffer_new_allocate(NULL, frame->data_bytes, NULL);
+
     GST_BUFFER_PTS(buffer) = frame->sequence * src->dwFrameInterval * 100;
     GST_BUFFER_DTS(buffer) = GST_CLOCK_TIME_NONE;
     GST_BUFFER_DURATION(buffer) = src->dwFrameInterval * 100;
@@ -129,13 +132,16 @@ void ThetaDriverNode::publishCompressedImage(GstMapInfo map) {
 
 ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
 {
+    // --------- raw image
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink sync=false qos=false emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
 
+    // --------- compressed image: jpeg
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! jpegenc ! appsink name=appsink qos=false sync=false emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! jpegenc ! appsink name=appsink sync=false qos=false emit-signals=true";
-    pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! jpegenc ! appsink name=appsink sync=false qos=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! jpegenc ! appsink name=appsink sync=false qos=false emit-signals=true";
+    pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
 
     this->declare_parameter("topic_pub", "theta/image_raw");
     this->declare_parameter("camera_frame", "camera_theta");
@@ -263,6 +269,12 @@ bool ThetaDriverNode::init() {
     g_signal_connect(appsink, "new-sample", G_CALLBACK(new_sample_callback), this);
     gst_object_unref(appsink);
 
+    //if(!init_gst_buffer_pool(caps))
+    //{
+    //    RCLCPP_FATAL(this->get_logger(), "Could not initialize gst buffer pool");
+    //    gsrc.pool = nullptr;
+    //}
+
     bool ok = open();
     if (!ok) {
         RCLCPP_FATAL(this->get_logger(), "Device open error");
@@ -286,5 +298,45 @@ bool ThetaDriverNode::init() {
     }
     return res == UVC_SUCCESS;
 }
+
+bool ThetaDriverNode::init_gst_buffer_pool(GstCaps* caps)
+{
+    GstStructure *config = nullptr;
+    int size, min, max;
+    gsrc.pool = gst_buffer_pool_new();
+    if(gsrc.pool == nullptr)
+    {
+        RCLCPP_INFO(this->get_logger(), "pool is null");
+        return false;
+    }
+
+    /* get config structure */
+    config = gst_buffer_pool_get_config(gsrc.pool);
+    if(config == nullptr)
+    {
+        RCLCPP_INFO(this->get_logger(), "config is null");
+        return false;
+    }
+    size = 1920*960*3;
+    size = size/10;
+    min = 5;
+    max = 20;
+
+    /* set caps, size, minimum and maximum buffers in the pool */
+    gst_buffer_pool_config_set_params (config, caps, size, min, max);
+
+    if (!gst_buffer_pool_set_config(gsrc.pool, config)) {
+        RCLCPP_INFO(this->get_logger(), "Failed to set buffer pool configuration.");
+        return false;
+    }
+
+    /* and activate */
+    if (!gst_buffer_pool_set_active(gsrc.pool, TRUE)) {
+        RCLCPP_INFO(this->get_logger(), "Failed to activate buffer pool.");
+        return false;
+    }
+    return true;
+}
+
 
 } // namespace theta_driver

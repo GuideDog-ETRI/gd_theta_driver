@@ -21,6 +21,7 @@ public:
     virtual ~ThetaDriverNode();
     bool init();
     bool open();
+    bool init_gst_buffer_pool(GstCaps* caps);
     void publishImage(GstMapInfo map);
     void publishCompressedImage(GstMapInfo map);
 
@@ -39,6 +40,7 @@ public:
 struct gst_src {
     GstElement* pipeline;
     GstElement* appsrc;
+    GstBufferPool *pool;
 
     GMainLoop* loop;
     GTimer* timer;
