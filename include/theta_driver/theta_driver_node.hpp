@@ -44,7 +44,8 @@ struct gst_src {
 
     GMainLoop* loop;
     GTimer* timer;
-    guint framecount;
+    int framecount = 0;
+    int fps = 30;
     guint id;
     guint bus_watch_id;
     uint32_t dwFrameInterval;

@@ -31,8 +31,12 @@ gboolean gst_bus_callback(GstBus* bus, GstMessage* message, gpointer data) {
     return TRUE;
 }
 
-void uvc_streaming_callback(uvc_frame_t* frame, void* ptr) {
+void uvc_streaming_callback(uvc_frame_t* frame, void* ptr) {    
     struct gst_src* src = (struct gst_src*)ptr;
+    int interval = 30 / src->fps;
+    src->framecount++;
+    if(src->framecount % interval != 0) return;
+
     GstBuffer* buffer = nullptr;
     GstFlowReturn ret;
     GstMapInfo map;
@@ -45,7 +49,6 @@ void uvc_streaming_callback(uvc_frame_t* frame, void* ptr) {
     GST_BUFFER_DTS(buffer) = GST_CLOCK_TIME_NONE;
     GST_BUFFER_DURATION(buffer) = src->dwFrameInterval * 100;
     GST_BUFFER_OFFSET(buffer) = frame->sequence;
-    src->framecount++;
 
     gst_buffer_map(buffer, &map, GST_MAP_WRITE);
     memcpy(map.data, frame->data, frame->data_bytes);
@@ -56,7 +59,6 @@ void uvc_streaming_callback(uvc_frame_t* frame, void* ptr) {
     if (ret != GST_FLOW_OK) {
         fprintf(stderr, "g_signal_emit_by_name push-buffer error");
     }
-    return;
 }
 
 GstFlowReturn new_sample_callback(GstAppSink* sink, gpointer data) {
@@ -147,11 +149,15 @@ ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
     this->declare_parameter("camera_frame", "camera_theta");
     this->declare_parameter("serial", "");
     this->declare_parameter("use4k", false);
+    this->declare_parameter("fps", 30);
 
     std::string topic_pub = this->get_parameter("topic_pub").as_string();
     camera_frame_ = this->get_parameter("camera_frame").as_string();
     serial_ = this->get_parameter("serial").as_string();
     use4k_ = this->get_parameter("use4k").as_bool();
+    int fps = this->get_parameter("fps").as_int();
+    if(fps>30 || fps<=0) fps = 30;
+    gsrc.fps = 30/(int)(30.0/fps + 0.5);    
 
     rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();
     //image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(topic_pub.c_str(), sensor_data_qos);
