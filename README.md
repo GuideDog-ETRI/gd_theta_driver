@@ -16,7 +16,13 @@ ros2 run theta_driver theta_driver_node
 
 You need to install the libuvc-theta and gstreamer dependencies before using this package.
 
-1. install gd_libuvc-theta
+1. Install libusb
+
+```
+sudo apt install libusb-1.0-0-dev
+```
+
+2. install gd_libuvc-theta
 
 ```bash
 git clone https://github.com/GuideDog-ETRI/gd_libuvc-theta.git
@@ -29,7 +35,7 @@ cd ..
 rm -rf gd_libuvc-theta
 ```
 
-2. install gstreamer dependencies
+3. install gstreamer dependencies
 
 ```bash
 sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev \
