@@ -66,26 +66,3 @@ ros2 run theta_driver theta_driver_node
 ```
 
 And then you can use image_view package, rqt or rviz2 to see the published image.
-
-## Optimize theta driver
-
-Latency of theta_driver can be reduced by using the **NVIDIA DeepStream** GStreamer plugin. Refer to https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_Installation.html
-
-1. Ubuntu 22.04 LTS
-
-2. Install DeepStream following the instructions in `install_deepstream.sh` script
-
-3. Modify the theta_driver pipeline to use the NVIDIA decoder or VA-API
-
-`theta_driver_node.cpp` (line number 113 ~ 114):
-```bash
-//pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! decodebin ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
-pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvh264dec ! queue ! gldownload ! queue ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
-```
-
-or 
-
-```bash
-//pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! decodebin ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
-pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink sync=false qos=false emit-signals=true";
-```
