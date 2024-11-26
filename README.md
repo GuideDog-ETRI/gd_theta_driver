@@ -66,3 +66,17 @@ ros2 run theta_driver theta_driver_node
 ```
 
 And then you can use image_view package, rqt or rviz2 to see the published image.
+
+4. trouble shooting
+
+In the ARM architecture computers such as Jetson (Orin, Xavier, ...), modify the GStreamer pipleline in `theta_driver_node.cpp` as follows:
+```bash
+    // --------- compressed jpeg image (x86)
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+
+    // --------- compressed jpeg image for Orin (ARM)
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! queue ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+    pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvv4l2decoder ! nvvidconv ! queue ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+```

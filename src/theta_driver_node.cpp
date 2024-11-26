@@ -134,16 +134,19 @@ void ThetaDriverNode::publishCompressedImage(GstMapInfo map) {
 
 ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
 {
-    // --------- raw image
+    // --------- raw image (x86)
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink emit-signals=true";
-    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink sync=false qos=false emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink qos=false sync=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! video/x-raw,format=RGB ! appsink name=appsink sync=false qos=false emit-signals=true";
 
-    // --------- compressed image: jpeg
-    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! jpegenc ! appsink name=appsink qos=false sync=false emit-signals=true";
-    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! vah264dec ! videoconvert n_threads=8 ! queue ! jpegenc ! appsink name=appsink sync=false qos=false emit-signals=true";
-    //pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! jpegenc ! appsink name=appsink sync=false qos=false emit-signals=true";
+    // --------- compressed jpeg image (x86)
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
     pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+
+    // --------- compressed jpeg image for Orin (ARM)
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! queue ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvv4l2decoder ! nvvidconv ! queue ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
 
     this->declare_parameter("topic_pub", "theta/image_raw");
     this->declare_parameter("camera_frame", "camera_theta");
