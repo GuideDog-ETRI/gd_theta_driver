@@ -1,10 +1,10 @@
 <launch>
   <node pkg="theta_driver" exec="theta_driver_node" name="theta_driver_node" output="screen">
-    <param name="topic_pub" value="theta/image_raw"/>
+    <param name="topic_pub" value="theta/image_raw/compressed"/>
     <param name="use_orin_pipeline" value="false"/>
     <param name="use_reliable_qos" value="false"/>
     <param name="use4k" value="false"/>
     <param name="camera_frame" value="theta"/>
-    <param name="fps" value="10"/>
+    <param name="fps" value="15"/>
   </node>
 </launch>

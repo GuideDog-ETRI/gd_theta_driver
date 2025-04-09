@@ -149,7 +149,7 @@ ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvv4l2decoder ! nvvidconv ! queue ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse config-interval=-1 ! queue ! nvv4l2decoder enable-max-performance=1 num-extra-surfaces=4 !  video/x-raw(memory:NVMM),format=NV12 ! nvvidconv !  video/x-raw,format=I420,width=1920,height=960,pixel-aspect-ratio=1/1,colorimetry=bt709 !  jpegenc ! appsink name=appsink sync=false drop=true max-buffers=2 emit-signals=true";    
 
-    this->declare_parameter("topic_pub", "theta/image_raw");
+    this->declare_parameter("topic_pub", "theta/image_raw/compressed");
     this->declare_parameter("use_orin_pipeline", false);
     this->declare_parameter("use_reliable_qos", false);
     this->declare_parameter("use4k", false);
@@ -169,8 +169,8 @@ ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
 
     rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();      // BEST_EFFORT
     bool use_reliable_qos = this->get_parameter("use_reliable_qos").as_bool();
-    if(use_reliable_qos) image_pub_compressed_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("theta/image_raw/compressed", 5);
-    else image_pub_compressed_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("theta/image_raw/compressed", sensor_data_qos);
+    if(use_reliable_qos) sensor_data_qos.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+    image_pub_compressed_ = this->create_publisher<sensor_msgs::msg::CompressedImage>(topic_pub, sensor_data_qos);
     //image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(topic_pub.c_str(), sensor_data_qos);
 
     rclcpp::Rate rate(1);    
