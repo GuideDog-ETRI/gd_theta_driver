@@ -5,11 +5,10 @@
 
 PLUGINLIB_EXPORT_CLASS(theta_driver::ThetaDriverNode, rclcpp::Node);
 
-namespace {
-theta_driver::gst_src gsrc;
-}
-
 namespace theta_driver {
+
+theta_driver::gst_src gsrc;
+static GstClockTime g_timestamp = 0;
 
 gboolean gst_bus_callback(GstBus* bus, GstMessage* message, gpointer data) {
     UNUSED(bus);
@@ -35,19 +34,20 @@ void uvc_streaming_callback(uvc_frame_t* frame, void* ptr) {
     struct gst_src* src = (struct gst_src*)ptr;
     int interval = 30 / src->fps;
     src->framecount++;
-    if(src->framecount % interval != 0) return;
+    if (src->framecount % interval != 0) return;
 
     GstBuffer* buffer = nullptr;
     GstFlowReturn ret;
     GstMapInfo map;
 
-    //if(src->pool) gst_buffer_pool_acquire_buffer(src->pool, &buffer, NULL);
-    //else buffer = gst_buffer_new_allocate(NULL, frame->data_bytes, NULL);
     buffer = gst_buffer_new_allocate(NULL, frame->data_bytes, NULL);
 
-    GST_BUFFER_PTS(buffer) = frame->sequence * src->dwFrameInterval * 100;
-    GST_BUFFER_DTS(buffer) = GST_CLOCK_TIME_NONE;
-    GST_BUFFER_DURATION(buffer) = src->dwFrameInterval * 100;
+    // set timestamp explicitly
+    GST_BUFFER_PTS(buffer) = g_timestamp;
+    GST_BUFFER_DTS(buffer) = g_timestamp;
+    GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale_int(1, GST_SECOND, src->fps);
+    g_timestamp += GST_BUFFER_DURATION(buffer);
+
     GST_BUFFER_OFFSET(buffer) = frame->sequence;
 
     gst_buffer_map(buffer, &map, GST_MAP_WRITE);
@@ -57,7 +57,7 @@ void uvc_streaming_callback(uvc_frame_t* frame, void* ptr) {
     g_signal_emit_by_name(src->appsrc, "push-buffer", buffer, &ret);
     gst_buffer_unref(buffer);
     if (ret != GST_FLOW_OK) {
-        fprintf(stderr, "g_signal_emit_by_name push-buffer error");
+        fprintf(stderr, "g_signal_emit_by_name push-buffer error\n");
     }
 }
 
@@ -142,29 +142,36 @@ ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
     // --------- compressed jpeg image (x86)
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! nvh264dec ! nvvideoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
-    pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
 
     // --------- compressed jpeg image for Orin (ARM)
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! avdec_h264 ! queue ! videoconvert n_threads=8 ! queue ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
     //pipeline_ = "appsrc name=ap ! queue ! h264parse ! queue ! nvv4l2decoder ! nvvidconv ! queue ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+    //pipeline_ = "appsrc name=ap ! queue ! h264parse config-interval=-1 ! queue ! nvv4l2decoder enable-max-performance=1 num-extra-surfaces=4 !  video/x-raw(memory:NVMM),format=NV12 ! nvvidconv !  video/x-raw,format=I420,width=1920,height=960,pixel-aspect-ratio=1/1,colorimetry=bt709 !  jpegenc ! appsink name=appsink sync=false drop=true max-buffers=2 emit-signals=true";    
 
     this->declare_parameter("topic_pub", "theta/image_raw");
-    this->declare_parameter("camera_frame", "camera_theta");
-    this->declare_parameter("serial", "");
+    this->declare_parameter("use_orin_pipeline", false);
+    this->declare_parameter("use_reliable_qos", false);
     this->declare_parameter("use4k", false);
     this->declare_parameter("fps", 30);
+    this->declare_parameter("camera_frame", "theta");
 
     std::string topic_pub = this->get_parameter("topic_pub").as_string();
     camera_frame_ = this->get_parameter("camera_frame").as_string();
-    serial_ = this->get_parameter("serial").as_string();
     use4k_ = this->get_parameter("use4k").as_bool();
     int fps = this->get_parameter("fps").as_int();
     if(fps>30 || fps<=0) fps = 30;
-    gsrc.fps = 30/(int)(30.0/fps + 0.5);    
+    gsrc.fps = 30/(int)(30.0/fps + 0.5);
 
-    rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();
+    pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
+    bool is_orin = this->get_parameter("use_orin_pipeline").as_bool();
+    if(is_orin) pipeline_ = "appsrc name=ap ! queue ! h264parse config-interval=-1 ! queue ! nvv4l2decoder enable-max-performance=1 num-extra-surfaces=4 !  video/x-raw(memory:NVMM),format=NV12 ! nvvidconv !  video/x-raw,format=I420,width=1920,height=960,pixel-aspect-ratio=1/1,colorimetry=bt709 !  jpegenc ! appsink name=appsink sync=false drop=true max-buffers=2 emit-signals=true";
+
+    rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();      // BEST_EFFORT
+    bool use_reliable_qos = this->get_parameter("use_reliable_qos").as_bool();
+    if(use_reliable_qos) image_pub_compressed_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("theta/image_raw/compressed", 5);
+    else image_pub_compressed_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("theta/image_raw/compressed", sensor_data_qos);
     //image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(topic_pub.c_str(), sensor_data_qos);
-    image_pub_compressed_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("theta/image_raw/compressed", sensor_data_qos);
 
     rclcpp::Rate rate(1);    
     while (rclcpp::ok()) {

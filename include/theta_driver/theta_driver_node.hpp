@@ -31,7 +31,7 @@ public:
     uvc_context_t* ctx_;
     bool use4k_ = false;
     std::string serial_ = "";
-    std::string camera_frame_ = "camera_theta";
+    std::string camera_frame_ = "theta";
     std::string pipeline_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr image_pub_compressed_;
