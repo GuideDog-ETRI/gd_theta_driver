@@ -165,7 +165,8 @@ ThetaDriverNode::ThetaDriverNode() : Node("theta_driver_node")
 
     pipeline_ = "appsrc name=ap ! h264parse ! vah264dec ! videoconvert n_threads=8 ! avenc_mjpeg ! appsink name=appsink sync=false qos=false emit-signals=true";
     bool is_orin = this->get_parameter("use_orin_pipeline").as_bool();
-    if(is_orin) pipeline_ = "appsrc name=ap ! queue ! h264parse config-interval=-1 ! queue ! nvv4l2decoder enable-max-performance=1 num-extra-surfaces=4 !  video/x-raw(memory:NVMM),format=NV12 ! nvvidconv !  video/x-raw,format=I420,width=1920,height=960,pixel-aspect-ratio=1/1,colorimetry=bt709 !  jpegenc ! appsink name=appsink sync=false drop=true max-buffers=2 emit-signals=true";
+    if(is_orin && use4k_) pipeline_ = "appsrc name=ap ! queue ! h264parse config-interval=-1 ! queue ! nvv4l2decoder enable-max-performance=1 num-extra-surfaces=4 !  video/x-raw(memory:NVMM),format=NV12 ! nvvidconv !  video/x-raw,format=I420,width=3840,height=1920,pixel-aspect-ratio=1/1,colorimetry=bt709 !  jpegenc ! appsink name=appsink sync=false drop=true max-buffers=2 emit-signals=true";
+    if(is_orin && !use4k_) pipeline_ = "appsrc name=ap ! queue ! h264parse config-interval=-1 ! queue ! nvv4l2decoder enable-max-performance=1 num-extra-surfaces=4 !  video/x-raw(memory:NVMM),format=NV12 ! nvvidconv !  video/x-raw,format=I420,width=1920,height=960,pixel-aspect-ratio=1/1,colorimetry=bt709 !  jpegenc ! appsink name=appsink sync=false drop=true max-buffers=2 emit-signals=true";
 
     rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();      // BEST_EFFORT
     bool use_reliable_qos = this->get_parameter("use_reliable_qos").as_bool();
